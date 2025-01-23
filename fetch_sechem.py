@@ -3,12 +3,14 @@ import requests
 import json
 from lxml import html
 from datetime import date
+from pyluach import dates
 
 # Next Year
 NEXT_YEAR = str(date.today().year + 1)
 
-# Current Hebrew Year
-CURRENT_HEBREW_YEAR = 'תשפ"ה'
+# Current & Next Hebrew Years
+CURRENT_HEBREW_YEAR = dates.HebrewDate.today().hebrew_year().replace('״', '"')
+NEXT_HEBREW_YEAR = dates.HebrewDate.today().add(years=1).hebrew_year().replace('״', '"')
 
 # TAU Constants
 # TAU_URL = 'https://go.tau.ac.il/he/med?degree=drMedicine'
@@ -96,7 +98,7 @@ def crawl_uni_site(url, uni_xpath, uni):
 def is_pattern(sentence, uni):
     if uni == HUJI:
         # Define the regex pattern for xx.xxx format
-        return CURRENT_HEBREW_YEAR in sentence and HUJI_REG.search(sentence)
+        return (CURRENT_HEBREW_YEAR in sentence or NEXT_HEBREW_YEAR in sentence) and HUJI_REG.search(sentence)
     elif uni == TAU:
         return TAU_REG.search(sentence)
     elif uni == TECH:
@@ -145,8 +147,12 @@ def fetch_value_from_tech():
     tech_fetched_raw_data = crawl_uni_site(TECH_URL, TECH_XPATH, TECH)
 
     # Organizes Relevant Lines
-    tech_raw_lines = tech_fetched_raw_data[0].split('\n')
-    tech_thresholds = [tech_raw_lines[1] + ': ' + tech_raw_lines[0], tech_raw_lines[2]]
+    if len(tech_fetched_raw_data) == 1:
+        # No threshold yet (***)
+        tech_thresholds = [tech_fetched_raw_data[0]]
+    else:
+        tech_raw_lines = tech_fetched_raw_data[0].split('\n')
+        tech_thresholds = [tech_raw_lines[1] + ': ' + tech_raw_lines[0], tech_raw_lines[2]]
 
     # Creates TECH output string
     tech_output_str = reformat_output(tech_thresholds, TECH)
@@ -167,8 +173,12 @@ def fetch_value_from_tau():
         med_data = [prog_data for prog_data in tau_programs_data if prog_data['nid'] == '8215'][0]
 
         # Extracts Only Relevant Lines
-        data_without_html_tags = med_data['field_registration_comments'].replace('&nbsp;', '').replace('<', '').replace('//', '').split('p>')
-        tau_thresholds = [update.strip('/') for update in data_without_html_tags if any(char.isdigit() for char in update)]
+        if med_data['field_registration_comments']:
+            data_without_html_tags = med_data['field_registration_comments'].replace('&nbsp;', '').replace('<', '').replace('//', '').split('p>')
+            tau_thresholds = [update.strip('/') for update in data_without_html_tags if any(char.isdigit() for char in update)]
+        else:
+            # No threshold yet (***)
+            tau_thresholds = ['***']
 
         # Creates TAU output string
         tau_output_str = reformat_output(tau_thresholds, TAU)

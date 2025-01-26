@@ -28,6 +28,7 @@ TAU = 'TAU'
 
 # HUJI Constants
 HUJI_URL = 'https://info.huji.ac.il/bachelor/Medicine'
+HUJI_HREF_XPATH = "//a[contains(@href, 'info.huji.ac.il/reception-channels/Kabala_Meshklal')]"
 HUJI_XPATH = "//p[span[@data-toggle='tooltip']]"
 HUJI_REG = re.compile(r"\b\d{2}\.\d{3}\b")
 HUJI = 'HUJI'
@@ -130,7 +131,7 @@ def fetch_value_from_bgu():
 # Retrieves HUJI Values
 def fetch_value_from_huji():
     # Crawls remote HUJI site
-    huji_fetched_raw_data = crawl_uni_site(HUJI_URL, HUJI_XPATH, HUJI)
+    huji_fetched_raw_data = crawl_uni_site(HUJI_URL, HUJI_HREF_XPATH, HUJI) + crawl_uni_site(HUJI_URL, HUJI_XPATH, HUJI)
 
     # Organizes Relevant Lines
     huji_thresholds = [line.strip('.').split("'")[-1] for line in huji_fetched_raw_data]
